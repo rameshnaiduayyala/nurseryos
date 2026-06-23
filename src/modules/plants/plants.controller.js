@@ -2,7 +2,7 @@ import * as plantsService from './plants.service.js';
 
 export const createPlant = async (req, res, next) => {
   try {
-    const result = await plantsService.createPlant(req.body);
+    const result = await plantsService.createPlant(req.body, req.user.id);
     res.status(201).json({
       success: true,
       message: 'Plant created successfully',
@@ -15,7 +15,7 @@ export const createPlant = async (req, res, next) => {
 
 export const getPlants = async (req, res, next) => {
   try {
-    const result = await plantsService.getPlants(req.query);
+    const result = await plantsService.getPlants(req.query, req.user);
     res.status(200).json({
       success: true,
       data: result,
@@ -27,7 +27,7 @@ export const getPlants = async (req, res, next) => {
 
 export const getPlantById = async (req, res, next) => {
   try {
-    const result = await plantsService.getPlantById(req.params.id);
+    const result = await plantsService.getPlantById(req.params.id, req.user);
     res.status(200).json({
       success: true,
       data: result,
@@ -39,7 +39,7 @@ export const getPlantById = async (req, res, next) => {
 
 export const updatePlant = async (req, res, next) => {
   try {
-    const result = await plantsService.updatePlant(req.params.id, req.body);
+    const result = await plantsService.updatePlant(req.params.id, req.body, req.user.id, req.user.role);
     res.status(200).json({
       success: true,
       message: 'Plant updated successfully',

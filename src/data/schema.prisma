@@ -37,6 +37,7 @@ model User {
   farmerLedgerEntries FarmerLedger[]
   posSales            PosSale[]
   operationalPlans   OperationalPlan[]
+  plants             Plant[]
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @updatedAt @map("updated_at")
 
@@ -145,6 +146,8 @@ model Plant {
   heightStandard   HeightStandard         @relation(fields: [heightStandardId], references: [id])
   description      String?
   unitPrice        Decimal                @map("unit_price") @db.Decimal(10, 2)
+  farmerId         String                 @map("farmer_id")
+  farmer           User                   @relation(fields: [farmerId], references: [id])
   inventoryBatches InventoryBatch[]
   procurementItems ProcurementOrderItem[]
   reservations     Reservation[]

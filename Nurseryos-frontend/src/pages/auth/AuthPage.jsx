@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { Leaf, AlertCircle, CheckCircle } from 'lucide-react';
+import { Leaf, AlertCircle, CheckCircle, Zap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+const DEMO_ACCOUNTS = [
+  { email: 'admin@nurseryos.com', password: 'Password123', label: 'Admin', color: 'bg-indigo-600 hover:bg-indigo-700' },
+  { email: 'farmer@nurseryos.com', password: 'Password123', label: 'Farmer', color: 'bg-emerald-600 hover:bg-emerald-700' },
+  { email: 'exporter@nurseryos.com', password: 'Password123', label: 'Exporter', color: 'bg-sky-600 hover:bg-sky-700' },
+  { email: 'supervisor@nurseryos.com', password: 'Password123', label: 'Supervisor', color: 'bg-amber-600 hover:bg-amber-700' },
+];
 
 export default function AuthPage() {
   const { login, register, loading, error, success, setError, setSuccess } = useAuth();
@@ -15,6 +22,17 @@ export default function AuthPage() {
     e.preventDefault();
     try {
       await login(email, password);
+    } catch (err) {
+      // Error is set in AuthContext
+    }
+  };
+
+  const handleQuickLogin = async (quickEmail, quickPassword) => {
+    setEmail(quickEmail);
+    setPassword(quickPassword);
+    setError('');
+    try {
+      await login(quickEmail, quickPassword);
     } catch (err) {
       // Error is set in AuthContext
     }
@@ -86,6 +104,31 @@ export default function AuthPage() {
             >
               {loading ? 'Authenticating...' : 'Sign In'}
             </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-3 text-slate-400 font-semibold">Quick Demo Login</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map((demo) => (
+                <button
+                  key={demo.email}
+                  type="button"
+                  onClick={() => handleQuickLogin(demo.email, demo.password)}
+                  disabled={loading}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition duration-200 disabled:opacity-50 ${demo.color}`}
+                >
+                  <Zap size={14} />
+                  {demo.label}
+                </button>
+              ))}
+            </div>
+
             <div className="text-center mt-4">
               <button 
                 type="button"

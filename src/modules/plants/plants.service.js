@@ -44,8 +44,7 @@ const findNearbyNurseryIds = async (lat, lng, radiusKm) => {
   }
 };
 
-export const createPlant = async (data) => {
-  // Verify references exist
+export const createPlant = async (data, farmerId) => {
   const category = await prisma.plantCategory.findUnique({ where: { id: data.categoryId } });
   if (!category) throw ApiError.badRequest('Category does not exist');
 
@@ -55,26 +54,32 @@ export const createPlant = async (data) => {
   const bagSize = await prisma.bagSize.findUnique({ where: { id: data.bagSizeId } });
   if (!bagSize) throw ApiError.badRequest('Bag size does not exist');
 
+  const heightStandard = await prisma.heightStandard.findUnique({ where: { id: data.heightStandardId } });
+  if (!heightStandard) throw ApiError.badRequest('Height standard does not exist');
+
   const plant = await prisma.plant.create({
     data: {
       name: data.name,
       categoryId: data.categoryId,
       varietyId: data.varietyId,
       bagSizeId: data.bagSizeId,
+      heightStandardId: data.heightStandardId,
       description: data.description,
       unitPrice: data.unitPrice,
+      farmerId,
     },
     include: {
       category: true,
       variety: true,
       bagSize: true,
+      heightStandard: true,
     },
   });
 
   return plant;
 };
 
-export const getPlants = async (filters) => {
+export const getPlants = async (filters, user) => {
   const where = {};
   const inventoryWhere = {};
   const plantIds = [];
@@ -90,6 +95,10 @@ export const getPlants = async (filters) => {
   }
   if (filters.bagSizeId) {
     where.bagSizeId = filters.bagSizeId;
+  }
+
+  if (user && user.role === 'FARMER') {
+    where.farmerId = user.id;
   }
 
   if (filters.nurseryId) {
@@ -138,13 +147,14 @@ export const getPlants = async (filters) => {
   });
 };
 
-export const getPlantById = async (id) => {
+export const getPlantById = async (id, user) => {
   const plant = await prisma.plant.findUnique({
     where: { id },
     include: {
       category: true,
       variety: true,
       bagSize: true,
+      heightStandard: true,
     },
   });
 
@@ -152,13 +162,21 @@ export const getPlantById = async (id) => {
     throw ApiError.notFound('Plant not found');
   }
 
+  if (user && user.role === 'FARMER' && plant.farmerId !== user.id) {
+    throw ApiError.forbidden('You can only view your own plants');
+  }
+
   return plant;
 };
 
-export const updatePlant = async (id, data) => {
+export const updatePlant = async (id, data, userId, userRole) => {
   const plant = await prisma.plant.findUnique({ where: { id } });
   if (!plant) {
     throw ApiError.notFound('Plant not found');
+  }
+
+  if (userRole !== 'ADMIN' && plant.farmerId !== userId) {
+    throw ApiError.forbidden('You can only update your own plants');
   }
 
   if (data.categoryId) {
@@ -173,6 +191,10 @@ export const updatePlant = async (id, data) => {
     const bagSize = await prisma.bagSize.findUnique({ where: { id: data.bagSizeId } });
     if (!bagSize) throw ApiError.badRequest('Bag size does not exist');
   }
+  if (data.heightStandardId) {
+    const heightStandard = await prisma.heightStandard.findUnique({ where: { id: data.heightStandardId } });
+    if (!heightStandard) throw ApiError.badRequest('Height standard does not exist');
+  }
 
   return prisma.plant.update({
     where: { id },
@@ -181,6 +203,7 @@ export const updatePlant = async (id, data) => {
       category: true,
       variety: true,
       bagSize: true,
+      heightStandard: true,
     },
   });
 };

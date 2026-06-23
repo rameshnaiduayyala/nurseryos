@@ -16,10 +16,14 @@ export const createBatch = async (data, farmerId) => {
     throw ApiError.forbidden('You do not own the nursery this block belongs to');
   }
 
-  // Validate plant exists
+  // Validate plant exists and belongs to this farmer
   const plant = await prisma.plant.findUnique({ where: { id: data.plantId } });
   if (!plant) {
     throw ApiError.notFound('Plant not found');
+  }
+
+  if (plant.farmerId && plant.farmerId !== farmerId) {
+    throw ApiError.forbidden('This plant does not belong to your catalog');
   }
 
   // Use a transaction to ensure batch and transaction log are both written

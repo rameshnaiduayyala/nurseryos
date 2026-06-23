@@ -15,6 +15,20 @@ export const inventory = {
     });
     return handleResponse(res);
   },
+  update: async (id, data) => {
+    const res = await fetch(`${API_URL}/inventory/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  getTransactions: async (id) => {
+    const res = await fetch(`${API_URL}/inventory/${id}/transactions`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
 
 export const nurseryBlocks = {

@@ -186,6 +186,7 @@ async function main() {
       heightStandardId: ht6ft.id,
       description: 'Elegant ornamental indoor foliage tree',
       unitPrice: 24.99,
+      farmerId: farmerUser.id,
     },
   });
 
@@ -198,6 +199,7 @@ async function main() {
       heightStandardId: ht2ft.id,
       description: 'Stunning mophead flowers blooming blue and pink',
       unitPrice: 15.50,
+      farmerId: farmerUser.id,
     },
   });
 

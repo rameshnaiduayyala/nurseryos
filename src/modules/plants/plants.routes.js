@@ -49,7 +49,7 @@ const router = Router();
 router.post(
   '/',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'FARMER'),
   validate(createPlantSchema),
   plantsController.createPlant
 );

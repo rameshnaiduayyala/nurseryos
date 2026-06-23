@@ -37,8 +37,16 @@ import SupervisorTrips from './pages/supervisor/Trips';
 import Notifications from './pages/notifications/Notifications';
 
 function AppContent() {
-  const { user, token } = useAuth();
+  const { user, token, loading } = useAuth();
   const [currentTab, setCurrentTab] = useState('dashboard');
+
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-slate-500">Loading...</div>
+      </div>
+    );
+  }
 
   if (!token || !user) {
     return <AuthPage />;

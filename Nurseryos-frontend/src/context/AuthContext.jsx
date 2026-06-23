@@ -1,22 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const hasLoadedProfile = useRef(false);
 
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
-      loadUserProfile();
+      if (!hasLoadedProfile.current) {
+        hasLoadedProfile.current = true;
+        loadUserProfile();
+      }
     } else {
       localStorage.removeItem('token');
       setUser(null);
+      hasLoadedProfile.current = false;
     }
   }, [token]);
 
