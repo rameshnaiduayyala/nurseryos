@@ -63,6 +63,7 @@ model Nursery {
   gst           String?
   address       String?
   contactPerson String?        @map("contact_person")
+  mobileNumber  String?        @map("mobile_number")
   latitude      Float?
   longitude     Float?
   farmerId      String         @map("farmer_id")

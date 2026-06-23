@@ -28,8 +28,16 @@ export const getById = async (id) => {
 };
 
 export const update = async (id, data) => {
-  const record = await prisma.user.findUnique({ where: { id } });
+  const record = await prisma.user.findUnique({
+    where: { id },
+    include: { role: true },
+  });
   if (!record) throw ApiError.notFound('user not found');
+
+  if (record.role?.name === 'FARMER' && data.isActive === true) {
+    throw ApiError.badRequest('Farmer users are activated by approving their nursery registration');
+  }
+
   return prisma.user.update({
     where: { id },
     data
@@ -40,4 +48,21 @@ export const remove = async (id) => {
   const record = await prisma.user.findUnique({ where: { id } });
   if (!record) throw ApiError.notFound('user not found');
   return prisma.user.delete({ where: { id } });
+};
+
+export const approve = async (id) => {
+  const record = await prisma.user.findUnique({
+    where: { id },
+    include: { role: true },
+  });
+  if (!record) throw ApiError.notFound('user not found');
+
+  if (record.role?.name === 'FARMER') {
+    throw ApiError.badRequest('Farmer users are approved through their nursery registration');
+  }
+
+  return prisma.user.update({
+    where: { id },
+    data: { isActive: true },
+  });
 };

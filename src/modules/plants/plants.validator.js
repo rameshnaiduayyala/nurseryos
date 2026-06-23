@@ -8,7 +8,7 @@ export const createPlantSchema = z.object({
     bagSizeId: z.string().uuid('Invalid Bag Size ID'),
     heightStandardId: z.string().uuid('Invalid Height Standard ID'),
     description: z.string().optional(),
-    unitPrice: z.number().positive('Unit price must be positive'),
+    unitPrice: z.coerce.number().positive('Unit price must be positive'),
   }),
 });
 
@@ -20,7 +20,7 @@ export const updatePlantSchema = z.object({
     bagSizeId: z.string().uuid('Invalid Bag Size ID').optional(),
     heightStandardId: z.string().uuid('Invalid Height Standard ID').optional(),
     description: z.string().optional(),
-    unitPrice: z.number().positive('Unit price must be positive').optional(),
+    unitPrice: z.coerce.number().positive('Unit price must be positive').optional(),
   }),
 });
 

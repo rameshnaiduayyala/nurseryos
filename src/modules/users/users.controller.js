@@ -51,7 +51,7 @@ export const remove = async (req, res, next) => {
 
 export const approve = async (req, res, next) => {
   try {
-    const result = await service.update(req.params.id, { isActive: true });
+    const result = await service.approve(req.params.id);
     res.status(200).json({ success: true, message: 'User account approved successfully', data: result });
   } catch (error) {
     next(error);

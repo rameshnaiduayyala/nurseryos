@@ -16,10 +16,11 @@ export const validate = (schema) => (req, res, next) => {
       return next(ApiError.badRequest('Validation error', errorMessages));
     }
 
-    // Replace request fields with validation-cleaned results
-    req.body = parsed.data.body;
-    req.query = parsed.data.query;
-    req.params = parsed.data.params;
+    // Replace only the request fields declared by the schema. Some route
+    // validators only validate body and must keep Express params intact.
+    if (parsed.data.body !== undefined) req.body = parsed.data.body;
+    if (parsed.data.query !== undefined) req.query = parsed.data.query;
+    if (parsed.data.params !== undefined) req.params = parsed.data.params;
     
     return next();
   } catch (error) {

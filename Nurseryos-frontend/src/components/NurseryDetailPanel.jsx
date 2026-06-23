@@ -65,8 +65,14 @@ export default function NurseryDetailPanel({ nursery, onClose }) {
             </div>
             {nursery.contactPerson && (
               <div className="flex items-center gap-2 text-xs text-slate-600">
-                <Phone size={14} className="text-slate-400" />
+                <User size={14} className="text-slate-400" />
                 <span>{nursery.contactPerson}</span>
+              </div>
+            )}
+            {nursery.mobileNumber && (
+              <div className="flex items-center gap-2 text-xs text-slate-600">
+                <Phone size={14} className="text-slate-400" />
+                <span>{nursery.mobileNumber}</span>
               </div>
             )}
             {nursery.gst && (

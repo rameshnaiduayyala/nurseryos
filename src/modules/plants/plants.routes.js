@@ -177,7 +177,7 @@ router.get('/:id', authenticate, plantsController.getPlantById);
 router.put(
   '/:id',
   authenticate,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'FARMER'),
   validate(updatePlantSchema),
   plantsController.updatePlant
 );
@@ -200,6 +200,6 @@ router.put(
  *       200:
  *         description: Plant deleted
  */
-router.delete('/:id', authenticate, plantsController.deletePlant);
+router.delete('/:id', authenticate, authorize('ADMIN', 'FARMER'), plantsController.deletePlant);
 
 export default router;

@@ -32,7 +32,32 @@ const generateRefreshToken = async (user) => {
   return token;
 };
 
-export const register = async ({ email, password, fullName, roleName, nurseryName, nurseryLocation, latitude, longitude }) => {
+const normalizeOptionalString = (value) => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const normalizeOptionalNumber = (value) => {
+  if (value == null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const register = async ({
+  email,
+  password,
+  fullName,
+  roleName,
+  nurseryName,
+  nurseryLocation,
+  nurseryAddress,
+  nurseryGst,
+  nurseryContactPerson,
+  nurseryMobileNumber,
+  latitude,
+  longitude,
+}) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     throw ApiError.conflict('Email is already registered');
@@ -45,49 +70,57 @@ export const register = async ({ email, password, fullName, roleName, nurseryNam
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      fullName,
-      roleId: role.id,
-      isActive: roleName === 'ADMIN' || roleName === 'SUPERVISOR' ? true : false,
-    },
-    include: {
-      role: true,
-    },
-  });
-
-  // Automatically create Role-specific profile table entries if required
-  if (roleName === 'DRIVER') {
-    await prisma.driver.create({
-      data: {
-        userId: user.id,
-        licenseNumber: `LIC-${user.id.slice(0, 8).toUpperCase()}`,
-      },
-    });
-  } else if (roleName === 'SUPERVISOR') {
-    await prisma.supervisor.create({
-      data: {
-        userId: user.id,
-      },
-    });
-  } else if (roleName === 'FARMER') {
-    if (!nurseryName || nurseryName.trim().length === 0) {
+  const user = await prisma.$transaction(async (tx) => {
+    if (roleName === 'FARMER' && (!nurseryName || nurseryName.trim().length === 0)) {
       throw ApiError.badRequest('Nursery name is required for farmer registration');
     }
 
-    const nursery = await prisma.nursery.create({
+    const createdUser = await tx.user.create({
       data: {
-        name: nurseryName.trim(),
-        location: nurseryLocation?.trim() || '',
-        farmerId: user.id,
-        isApproved: false,
-        latitude: latitude != null ? parseFloat(latitude) : null,
-        longitude: longitude != null ? parseFloat(longitude) : null,
+        email,
+        passwordHash,
+        fullName,
+        roleId: role.id,
+        isActive: roleName === 'ADMIN' || roleName === 'SUPERVISOR',
+      },
+      include: {
+        role: true,
       },
     });
-  }
+
+    // Automatically create Role-specific profile table entries if required.
+    if (roleName === 'DRIVER') {
+      await tx.driver.create({
+        data: {
+          userId: createdUser.id,
+          licenseNumber: `LIC-${createdUser.id.slice(0, 8).toUpperCase()}`,
+        },
+      });
+    } else if (roleName === 'SUPERVISOR') {
+      await tx.supervisor.create({
+        data: {
+          userId: createdUser.id,
+        },
+      });
+    } else if (roleName === 'FARMER') {
+      await tx.nursery.create({
+        data: {
+          name: nurseryName.trim(),
+          location: normalizeOptionalString(nurseryLocation) || '',
+          address: normalizeOptionalString(nurseryAddress),
+          gst: normalizeOptionalString(nurseryGst),
+          contactPerson: normalizeOptionalString(nurseryContactPerson),
+          mobileNumber: normalizeOptionalString(nurseryMobileNumber),
+          farmerId: createdUser.id,
+          isApproved: false,
+          latitude: normalizeOptionalNumber(latitude),
+          longitude: normalizeOptionalNumber(longitude),
+        },
+      });
+    }
+
+    return createdUser;
+  });
 
   return {
     id: user.id,

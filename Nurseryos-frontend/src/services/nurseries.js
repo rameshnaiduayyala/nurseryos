@@ -7,7 +7,7 @@ export const nurseries = {
     });
     return handleResponse(res);
   },
-  create: async (name, location, address, gst, contactPerson, latitude, longitude) => {
+  create: async (name, location, address, gst, contactPerson, mobileNumber, latitude, longitude) => {
     const res = await fetch(`${API_URL}/nurseries`, {
       method: 'POST',
       headers: getHeaders(),
@@ -17,6 +17,7 @@ export const nurseries = {
         address,
         gst,
         contactPerson,
+        mobileNumber,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
       }),

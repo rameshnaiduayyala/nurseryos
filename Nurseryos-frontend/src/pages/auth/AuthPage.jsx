@@ -20,6 +20,10 @@ export default function AuthPage() {
   const [roleName, setRoleName] = useState('EXPORTER');
   const [nurseryName, setNurseryName] = useState('');
   const [nurseryLocation, setNurseryLocation] = useState('');
+  const [nurseryAddress, setNurseryAddress] = useState('');
+  const [nurseryGst, setNurseryGst] = useState('');
+  const [nurseryContactPerson, setNurseryContactPerson] = useState('');
+  const [nurseryMobileNumber, setNurseryMobileNumber] = useState('');
   const [nurseryLat, setNurseryLat] = useState('');
   const [nurseryLng, setNurseryLng] = useState('');
 
@@ -41,7 +45,20 @@ export default function AuthPage() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     try {
-      await register(email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng);
+      await register(
+        email,
+        password,
+        fullName,
+        roleName,
+        nurseryName,
+        nurseryLocation,
+        nurseryLat,
+        nurseryLng,
+        nurseryAddress,
+        nurseryGst,
+        nurseryContactPerson,
+        nurseryMobileNumber
+      );
       setIsRegister(false);
     } catch (err) {
       // Error is set in AuthContext
@@ -209,6 +226,57 @@ export default function AuthPage() {
                       if (loc?.lng) setNurseryLng(String(loc.lng));
                     }}
                     height="200px"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={nurseryLocation}
+                    onChange={(e) => setNurseryLocation(e.target.value)}
+                    placeholder="Selected nursery location"
+                    className="w-full mt-2 px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1">Nursery Address</label>
+                  <textarea
+                    value={nurseryAddress}
+                    onChange={(e) => setNurseryAddress(e.target.value)}
+                    placeholder="Village, mandal, district, state"
+                    rows={2}
+                    className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-emerald-800 mb-1">GST Number</label>
+                    <input
+                      type="text"
+                      value={nurseryGst}
+                      onChange={(e) => setNurseryGst(e.target.value)}
+                      placeholder="Optional"
+                      className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-emerald-800 mb-1">Contact Person</label>
+                    <input
+                      type="text"
+                      value={nurseryContactPerson}
+                      onChange={(e) => setNurseryContactPerson(e.target.value)}
+                      placeholder="Owner or manager"
+                      className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1">Mobile Number <span className="text-rose-500">*</span></label>
+                  <input
+                    type="tel"
+                    required
+                    value={nurseryMobileNumber}
+                    onChange={(e) => setNurseryMobileNumber(e.target.value)}
+                    placeholder="Nursery contact mobile"
+                    className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </>

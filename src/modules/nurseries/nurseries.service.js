@@ -2,6 +2,8 @@ import prisma from '../../config/database.js';
 import ApiError from '../../common/helpers/api-error.js';
 import logger from '../../config/logger.js';
 
+const normalizeOptionalNumber = (value) => (value == null ? null : Number(value));
+
 export const createNursery = async (data, farmerId) => {
   const nursery = await prisma.nursery.create({
     data: {
@@ -10,8 +12,9 @@ export const createNursery = async (data, farmerId) => {
       address: data.address,
       gst: data.gst,
       contactPerson: data.contactPerson,
-      latitude: data.latitude ? parseFloat(data.latitude) : null,
-      longitude: data.longitude ? parseFloat(data.longitude) : null,
+      mobileNumber: data.mobileNumber,
+      latitude: normalizeOptionalNumber(data.latitude),
+      longitude: normalizeOptionalNumber(data.longitude),
       farmerId,
       isApproved: false, // Default false until Admin approves
     },
@@ -25,17 +28,21 @@ export const approveNursery = async (nurseryId, isApproved) => {
     throw ApiError.notFound('Nursery not found');
   }
 
-  const updatedNursery = await prisma.nursery.update({
-    where: { id: nurseryId },
-    data: { isApproved },
-  });
-
-  if (isApproved && nursery.farmerId) {
-    await prisma.user.update({
-      where: { id: nursery.farmerId },
-      data: { isActive: true },
+  const updatedNursery = await prisma.$transaction(async (tx) => {
+    const approvedNursery = await tx.nursery.update({
+      where: { id: nurseryId },
+      data: { isApproved },
     });
-  }
+
+    if (nursery.farmerId) {
+      await tx.user.update({
+        where: { id: nursery.farmerId },
+        data: { isActive: isApproved },
+      });
+    }
+
+    return approvedNursery;
+  });
 
   return updatedNursery;
 };
@@ -77,7 +84,7 @@ export const getNearbyNurseries = async (latStr, lngStr, radiusKmStr) => {
     // Attempt PostGIS query
     const radiusMeters = radiusKm * 1000;
     const nearby = await prisma.$queryRaw`
-      SELECT id, name, location, address, "contact_person" as "contactPerson", latitude, longitude, "is_approved" as "isApproved",
+      SELECT id, name, location, address, "contact_person" as "contactPerson", "mobile_number" as "mobileNumber", latitude, longitude, "is_approved" as "isApproved",
              ST_DistanceSphere(
                ST_MakePoint(longitude, latitude),
                ST_MakePoint(${lng}, ${lat})
@@ -96,7 +103,7 @@ export const getNearbyNurseries = async (latStr, lngStr, radiusKmStr) => {
     
     // Fallback using Spherical Law of Cosines
     const nearbyFallback = await prisma.$queryRaw`
-      SELECT id, name, location, address, "contact_person" as "contactPerson", latitude, longitude, "is_approved" as "isApproved",
+      SELECT id, name, location, address, "contact_person" as "contactPerson", "mobile_number" as "mobileNumber", latitude, longitude, "is_approved" as "isApproved",
              (6371 * acos(
                cos(radians(${lat})) * cos(radians(latitude)) *
                cos(radians(longitude) - radians(${lng})) +
@@ -156,8 +163,8 @@ export const updateNursery = async (nurseryId, data, user) => {
     where: { id: nurseryId },
     data: {
       ...data,
-      ...(data.latitude && { latitude: parseFloat(data.latitude) }),
-      ...(data.longitude && { longitude: parseFloat(data.longitude) }),
+      ...(data.latitude != null && { latitude: Number(data.latitude) }),
+      ...(data.longitude != null && { longitude: Number(data.longitude) }),
     },
   });
 

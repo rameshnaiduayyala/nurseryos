@@ -53,12 +53,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleRegister = async (email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng) => {
+  const handleRegister = async (
+    email,
+    password,
+    fullName,
+    roleName,
+    nurseryName,
+    nurseryLocation,
+    nurseryLat,
+    nurseryLng,
+    nurseryAddress,
+    nurseryGst,
+    nurseryContactPerson,
+    nurseryMobileNumber
+  ) => {
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      const res = await api.auth.register(email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng);
+      const res = await api.auth.register(
+        email,
+        password,
+        fullName,
+        roleName,
+        nurseryName,
+        nurseryLocation,
+        nurseryLat,
+        nurseryLng,
+        nurseryAddress,
+        nurseryGst,
+        nurseryContactPerson,
+        nurseryMobileNumber
+      );
       setSuccess('Account registered successfully! Please wait for Admin approval.');
       return res;
     } catch (err) {

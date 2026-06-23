@@ -88,7 +88,7 @@ export default function Approvals() {
   const getRoleName = (u) => u?.role?.name || u?.roleName || 'N/A';
   const getUserId = (u) => u?.id || '';
 
-  const pendingUsers = (usersList || []).filter((u) => !u.isActive);
+  const pendingUsers = (usersList || []).filter((u) => !u.isActive && getRoleName(u) !== 'FARMER');
   const pendingNurseries = (nurseriesList || []).filter((n) => !n.isApproved);
 
   if (loading) {
@@ -111,6 +111,7 @@ export default function Approvals() {
           </div>
           <div>
             <h4 className="font-bold text-slate-800">Pending User Approvals</h4>
+            <p className="text-[11px] text-slate-400">Farmer accounts are reviewed through their nursery registration.</p>
             <p className="text-xs text-slate-400">{pendingUsers.length} account{pendingUsers.length !== 1 ? 's' : ''} awaiting review</p>
           </div>
         </div>
@@ -207,6 +208,7 @@ export default function Approvals() {
               <tr className="border-b-2 border-slate-100 text-xs uppercase tracking-wider text-slate-400 font-semibold">
                 <th className="pb-3">Nursery Name</th>
                 <th className="pb-3">Location</th>
+                <th className="pb-3">Details</th>
                 <th className="pb-3">Farmer</th>
                 <th className="pb-3 text-center">Actions</th>
               </tr>
@@ -223,6 +225,12 @@ export default function Approvals() {
                     </div>
                   </td>
                   <td className="py-3.5 text-slate-500">{n?.location || '-'}</td>
+                  <td className="py-3.5 text-slate-500">
+                    <div>{n?.address || '-'}</div>
+                    <div className="text-xs text-slate-400">
+                      {[n?.contactPerson, n?.mobileNumber, n?.gst].filter(Boolean).join(' | ') || 'No GST/contact details'}
+                    </div>
+                  </td>
                   <td className="py-3.5 text-slate-500">
                     {n?.farmer?.fullName || n?.farmerId?.slice?.(0, 8) || '-'}
                   </td>
@@ -258,7 +266,7 @@ export default function Approvals() {
               ))}
               {pendingNurseries.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400 text-sm">
+                  <td colSpan={5} className="py-8 text-center text-slate-400 text-sm">
                     <CheckCircle2 size={24} className="mx-auto mb-2 text-emerald-300" />
                     All nursery registrations are approved.
                   </td>

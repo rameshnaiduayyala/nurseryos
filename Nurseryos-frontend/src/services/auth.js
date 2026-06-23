@@ -9,11 +9,37 @@ export const auth = {
     });
     return handleResponse(res);
   },
-  register: async (email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng) => {
+  register: async (
+    email,
+    password,
+    fullName,
+    roleName,
+    nurseryName,
+    nurseryLocation,
+    nurseryLat,
+    nurseryLng,
+    nurseryAddress,
+    nurseryGst,
+    nurseryContactPerson,
+    nurseryMobileNumber
+  ) => {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName, roleName, nurseryName, nurseryLocation, latitude: nurseryLat, longitude: nurseryLng }),
+      body: JSON.stringify({
+        email,
+        password,
+        fullName,
+        roleName,
+        nurseryName,
+        nurseryLocation,
+        nurseryAddress,
+        nurseryGst,
+        nurseryContactPerson,
+        nurseryMobileNumber,
+        latitude: nurseryLat,
+        longitude: nurseryLng,
+      }),
     });
     return handleResponse(res);
   },

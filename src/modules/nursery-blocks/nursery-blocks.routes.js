@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as controller from './nursery-blocks.controller.js';
 import { createSchema, updateSchema } from './nursery-blocks.validator.js';
 import { validate } from '../../common/middleware/validate.middleware.js';
-import { authenticate } from '../../common/middleware/auth.middleware.js';
+import { authenticate, authorize } from '../../common/middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ const router = Router();
  *       201:
  *         description: Created
  */
-router.post('/', authenticate, validate(createSchema), controller.create);
+router.post('/', authenticate, authorize('ADMIN', 'FARMER'), validate(createSchema), controller.create);
 
 /**
  * @openapi
@@ -72,7 +72,7 @@ router.get('/:id', authenticate, controller.getById);
  *       200:
  *         description: Updated
  */
-router.put('/:id', authenticate, validate(updateSchema), controller.update);
+router.put('/:id', authenticate, authorize('ADMIN', 'FARMER'), validate(updateSchema), controller.update);
 
 /**
  * @openapi
@@ -92,6 +92,6 @@ router.put('/:id', authenticate, validate(updateSchema), controller.update);
  *       200:
  *         description: Deleted
  */
-router.delete('/:id', authenticate, controller.remove);
+router.delete('/:id', authenticate, authorize('ADMIN', 'FARMER'), controller.remove);
 
 export default router;
