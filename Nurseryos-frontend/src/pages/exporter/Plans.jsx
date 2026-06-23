@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, ClipboardList, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import MapView from '../../components/MapView';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,6 +9,7 @@ export default function Plans() {
   const [plansList, setPlansList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   const [nurseries, setNurseries] = useState([]);
   const [formName, setFormName] = useState('');
@@ -209,6 +211,44 @@ export default function Plans() {
         </div>
       )}
 
+      {selectedPlan && (() => {
+        const stopsWithCoords = (selectedPlan.stops || []).filter(
+          (s) => s.nursery?.latitude != null && s.nursery?.longitude != null
+        );
+        const markers = stopsWithCoords.map((s) => ({
+          lat: s.nursery.latitude,
+          lng: s.nursery.longitude,
+          label: s.nursery.name,
+          color: '#059669',
+        }));
+        const center =
+          markers.length > 0
+            ? [markers[0].lat, markers[0].lng]
+            : [45.0, -122.0];
+
+        return (
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h5 className="text-sm font-bold text-slate-800">
+                Route Map: {selectedPlan.name}
+              </h5>
+              <button
+                onClick={() => setSelectedPlan(null)}
+                className="text-xs text-slate-500 hover:text-slate-700 font-semibold"
+              >
+                Close Map
+              </button>
+            </div>
+            <MapView center={center} zoom={12} markers={markers} />
+            {stopsWithCoords.length === 0 && (
+              <p className="text-xs text-slate-400 mt-2">
+                No coordinates available for this plan's stops.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <h5 className="text-sm font-bold text-slate-800 mb-4">Saved Plans</h5>
         <div className="overflow-x-auto">
@@ -225,7 +265,15 @@ export default function Plans() {
             </thead>
             <tbody>
               {plansList.map((plan) => (
-                <tr key={plan.id} className="border-b border-slate-100">
+                <tr
+                  key={plan.id}
+                  onClick={() => setSelectedPlan(plan)}
+                  className={`border-b border-slate-100 cursor-pointer transition ${
+                    selectedPlan?.id === plan.id
+                      ? 'bg-emerald-50'
+                      : 'hover:bg-slate-50'
+                  }`}
+                >
                   <td className="py-3 font-semibold">{plan.name}</td>
                   <td className="py-3 text-slate-500">{plan.type}</td>
                   <td className="py-3 font-semibold">{plan.totalStops}</td>
@@ -238,13 +286,19 @@ export default function Plans() {
                       {plan.status === 'DRAFT' && (
                         <>
                           <button
-                            onClick={() => handleUpdateStatus(plan.id, 'ACTIVE')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateStatus(plan.id, 'ACTIVE');
+                            }}
                             className="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
                           >
                             Activate
                           </button>
                           <button
-                            onClick={() => handleUpdateStatus(plan.id, 'CANCELLED')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateStatus(plan.id, 'CANCELLED');
+                            }}
                             className="px-2.5 py-1 rounded text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition shadow-sm"
                           >
                             Cancel
@@ -253,7 +307,10 @@ export default function Plans() {
                       )}
                       {plan.status === 'ACTIVE' && (
                         <button
-                          onClick={() => handleUpdateStatus(plan.id, 'COMPLETED')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateStatus(plan.id, 'COMPLETED');
+                          }}
                           className="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
                         >
                           Complete
