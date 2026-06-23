@@ -48,12 +48,14 @@ export default function Catalog() {
   const loadBaseData = async () => {
     try {
       setLoading(true);
-      const [invRes, catRes] = await Promise.all([
+      const [invRes, catRes, nurseriesRes] = await Promise.all([
         api.inventory.list(),
         api.categories.list(),
+        api.nurseries.list(),
       ]);
       setInventory(invRes.data || []);
       setCategories(catRes.data || []);
+      setNurseries(nurseriesRes.data || []);
     } catch (err) {
       console.error('Failed to load catalog base data', err);
       setError(err.message);
@@ -85,7 +87,16 @@ export default function Catalog() {
     [nearbyNurseries]
   );
 
+  const hasCatalogSearch = useMemo(
+    () => searchName.trim().length > 0 || Boolean(filterCategory) || nearbyNurseryIds.size > 0,
+    [searchName, filterCategory, nearbyNurseryIds]
+  );
+
   const filteredInventory = useMemo(() => {
+    if (!hasCatalogSearch) {
+      return [];
+    }
+
     let items = inventory;
 
     if (nearbyNurseryIds.size > 0) {
@@ -107,19 +118,21 @@ export default function Catalog() {
     }
 
     return items;
-  }, [inventory, nearbyNurseryIds, searchName, filterCategory]);
+  }, [hasCatalogSearch, inventory, nearbyNurseryIds, searchName, filterCategory]);
 
   const plantsByNursery = useMemo(() => {
     const map = new Map();
     filteredInventory.forEach((item) => {
       const nurseryId = item.nurseryBlock?.nursery?.id;
       const nurseryName = item.nurseryBlock?.nursery?.name || 'Unknown';
+      const nurseryLocation = item.nurseryBlock?.nursery?.location || 'Location not set';
       if (!nurseryId) return;
 
       if (!map.has(nurseryId)) {
         map.set(nurseryId, {
           nurseryId,
           nurseryName,
+          nurseryLocation,
           nursery: item.nurseryBlock?.nursery,
           plants: new Map(),
         });
@@ -136,6 +149,7 @@ export default function Catalog() {
           unitPrice: item.unitPrice,
           nurseryId,
           nurseryName,
+          nurseryLocation,
         });
       }
 
@@ -327,7 +341,12 @@ export default function Catalog() {
           </div>
         </div>
 
-        {plantsByNursery.length === 0 ? (
+        {!hasCatalogSearch ? (
+          <div className="py-10 text-center text-slate-400 text-sm">
+            <Search size={32} className="mx-auto mb-3 text-slate-300" />
+            Search for a plant or use supplier proximity search to view matching nurseries and locations.
+          </div>
+        ) : plantsByNursery.length === 0 ? (
           <div className="py-10 text-center text-slate-400 text-sm">
             <Search size={32} className="mx-auto mb-3 text-slate-300" />
             No plants found. Try adjusting your search or GIS radius.
@@ -339,12 +358,17 @@ export default function Catalog() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full bg-emerald-700"></div>
-                    <h5 className="text-sm font-bold text-slate-700">
-                      {group.nurseryName}
-                    </h5>
-                    <span className="text-xs text-slate-400">
-                      {group.plants.size} plant variety available
-                    </span>
+                    <div>
+                      <h5 className="text-sm font-bold text-slate-700">
+                        {group.nurseryName}
+                      </h5>
+                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                        <MapPin size={12} />
+                        <span>{group.nurseryLocation}</span>
+                        <span className="mx-1">|</span>
+                        <span>{group.plants.size} plant variety available</span>
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={() => handleNurseryClick(group.nursery)}
@@ -360,6 +384,7 @@ export default function Catalog() {
                       key={plant.id}
                       plant={plant}
                       nurseryName={group.nurseryName}
+                      nurseryLocation={group.nurseryLocation}
                       availableQty={plant.availableQty}
                       onReserve={() => handleAddToCart(plant, { id: group.nurseryId, name: group.nurseryName })}
                     />

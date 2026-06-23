@@ -1,4 +1,5 @@
 import * as service from './plans.service.js';
+import { generatePlanPdf } from '../../common/helpers/pdf-generator.js';
 
 export const createPlan = async (req, res, next) => {
   try {
@@ -79,6 +80,18 @@ export const getPlanAvailability = async (req, res, next) => {
       success: true,
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadPdf = async (req, res, next) => {
+  try {
+    const plan = await service.getPlanById(req.params.id, req.user);
+    const pdfBuffer = await generatePlanPdf(plan);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=route-sheet-${plan.id.slice(0, 8)}.pdf`);
+    res.status(200).send(pdfBuffer);
   } catch (error) {
     next(error);
   }

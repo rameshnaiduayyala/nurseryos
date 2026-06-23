@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PlantCard({ plant, onReserve, nurseryName, availableQty }) {
+export default function PlantCard({ plant, onReserve, nurseryName, nurseryLocation, availableQty }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition group">
       <div className="flex items-start justify-between mb-3">
@@ -26,6 +26,12 @@ export default function PlantCard({ plant, onReserve, nurseryName, availableQty 
           <div className="col-span-2">
             <span className="text-slate-400">Source:</span>
             <span className="ml-1 font-semibold text-slate-700">{nurseryName}</span>
+          </div>
+        )}
+        {nurseryLocation && (
+          <div className="col-span-2">
+            <span className="text-slate-400">Location:</span>
+            <span className="ml-1 font-semibold text-slate-700">{nurseryLocation}</span>
           </div>
         )}
       </div>

@@ -20,6 +20,8 @@ router.post(
 
 router.get('/', authenticate, controller.getPlans);
 
+router.get('/:id/pdf', authenticate, controller.downloadPdf);
+
 router.get('/:id', authenticate, controller.getPlanById);
 
 router.patch(

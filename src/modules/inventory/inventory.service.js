@@ -112,7 +112,17 @@ export const getInventory = async (user) => {
   return prisma.inventoryBatch.findMany({
     where,
     include: {
-      nurseryBlock: { include: { nursery: true } },
+      nurseryBlock: {
+        include: {
+          nursery: {
+            include: {
+              farmer: {
+                select: { id: true, fullName: true, email: true },
+              },
+            },
+          },
+        },
+      },
       plant: { include: { category: true, variety: true, bagSize: true } },
     },
   });

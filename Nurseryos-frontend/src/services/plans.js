@@ -21,6 +21,16 @@ export const plans = {
     });
     return handleResponse(res);
   },
+  downloadPdf: async (id) => {
+    const res = await fetch(`${API_URL}/plans/${id}/pdf`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || 'Failed to download route sheet');
+    }
+    return res.blob();
+  },
   updateStatus: async (id, status) => {
     const res = await fetch(`${API_URL}/plans/${id}/status`, {
       method: 'PATCH',

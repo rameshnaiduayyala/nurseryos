@@ -11,7 +11,7 @@ export default function RouteSummary({ stops }) {
   const markers = validStops.map((s, idx) => ({
     lat: s.nursery.latitude,
     lng: s.nursery.longitude,
-    label: `${idx + 1}. ${s.nursery.name}`,
+    label: `${idx + 1}. ${s.nursery.name} - ${s.plannedQuantity || 0} plants`,
     color: '#059669',
   }));
 
@@ -45,6 +45,9 @@ export default function RouteSummary({ stops }) {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-800 truncate">{s.nursery.name}</p>
               <p className="text-xs text-slate-500 truncate">{s.nursery.location}</p>
+              <p className="text-xs text-slate-500 truncate">
+                Plants: {s.plannedQuantity || 0}
+              </p>
             </div>
           </div>
         ))}

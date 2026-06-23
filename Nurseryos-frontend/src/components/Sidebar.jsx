@@ -12,13 +12,13 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
   if (!user) return null;
 
   return (
-    <aside className="w-64 bg-emerald-900 text-emerald-100 flex flex-col shrink-0">
+    <aside className="w-64 h-screen sticky top-0 bg-emerald-900 text-emerald-100 flex flex-col shrink-0 overflow-hidden">
       <div className="p-6 flex items-center gap-3 border-b border-emerald-800">
         <Leaf size={28} className="text-emerald-400" />
         <span className="text-xl font-bold tracking-tight">NurseryOS</span>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="sidebar-scroll flex-1 min-h-0 p-4 space-y-1 overflow-y-auto scroll-smooth">
         <button 
           onClick={() => setCurrentTab('dashboard')}
           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition duration-200 ${
@@ -169,6 +169,15 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
               <span>Customers</span>
             </button>
             <button 
+              onClick={() => setCurrentTab('exporter-plans')}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition duration-200 ${
+                currentTab === 'exporter-plans' ? 'bg-emerald-800 text-white font-semibold' : 'hover:bg-emerald-800/50'
+              }`}
+            >
+              <ClipboardList size={18} />
+              <span>Sourcing Lists</span>
+            </button>
+            <button 
               onClick={() => setCurrentTab('exporter-quotations')}
               className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition duration-200 ${
                 currentTab === 'exporter-quotations' ? 'bg-emerald-800 text-white font-semibold' : 'hover:bg-emerald-800/50'
@@ -221,15 +230,6 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
             >
               <Truck size={18} />
               <span>Trips Dispatch</span>
-            </button>
-            <button 
-              onClick={() => setCurrentTab('exporter-plans')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition duration-200 ${
-                currentTab === 'exporter-plans' ? 'bg-emerald-800 text-white font-semibold' : 'hover:bg-emerald-800/50'
-              }`}
-            >
-              <ClipboardList size={18} />
-              <span>Operational Plans</span>
             </button>
             <button 
               onClick={() => setCurrentTab('exporter-workflow')}

@@ -35,26 +35,18 @@ export const createPlan = async (data, exporterId) => {
         stops: {
           include: {
             nursery: {
-              include: {
+              select: {
+                id: true,
+                name: true,
+                location: true,
+                address: true,
+                contactPerson: true,
+                mobileNumber: true,
+                latitude: true,
+                longitude: true,
+                farmerId: true,
                 farmer: {
                   select: { id: true, fullName: true, email: true },
-                },
-                blocks: {
-                  include: {
-                    inventoryBatches: {
-                      where: { status: 'AVAILABLE' },
-                      include: {
-                        plant: {
-                          include: {
-                            category: true,
-                            variety: true,
-                            bagSize: true,
-                            heightStandard: true,
-                          },
-                        },
-                      },
-                    },
-                  },
                 },
               },
             },
@@ -95,7 +87,20 @@ export const getPlans = async (user) => {
       stops: {
         include: {
           nursery: {
-            select: { id: true, name: true, location: true, latitude: true, longitude: true },
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              address: true,
+              contactPerson: true,
+              mobileNumber: true,
+              latitude: true,
+              longitude: true,
+              farmerId: true,
+              farmer: {
+                select: { id: true, fullName: true, email: true },
+              },
+            },
           },
         },
         orderBy: { stopOrder: 'asc' },
@@ -115,26 +120,18 @@ export const getPlanById = async (id, user) => {
       stops: {
         include: {
           nursery: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              address: true,
+              contactPerson: true,
+              mobileNumber: true,
+              latitude: true,
+              longitude: true,
+              farmerId: true,
               farmer: {
                 select: { id: true, fullName: true, email: true },
-              },
-              blocks: {
-                include: {
-                  inventoryBatches: {
-                    where: { status: 'AVAILABLE' },
-                    include: {
-                      plant: {
-                        include: {
-                          category: true,
-                          variety: true,
-                          bagSize: true,
-                          heightStandard: true,
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
           },

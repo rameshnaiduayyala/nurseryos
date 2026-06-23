@@ -7,6 +7,12 @@ export const nurseries = {
     });
     return handleResponse(res);
   },
+  getById: async (id) => {
+    const res = await fetch(`${API_URL}/nurseries/${id}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
   create: async (name, location, address, gst, contactPerson, mobileNumber, latitude, longitude) => {
     const res = await fetch(`${API_URL}/nurseries`, {
       method: 'POST',

@@ -1,5 +1,15 @@
 import PDFDocument from 'pdfkit';
 
+const parsePlanNotes = (notes) => {
+  if (!notes) return null;
+  try {
+    const parsed = JSON.parse(notes);
+    return parsed?.kind === 'SOURCING_LIST' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Compiles a professional Invoice PDF layout
  * 
@@ -167,6 +177,110 @@ export const generateQuotationPdf = (quotation) => {
     doc.fontSize(8)
       .fillColor('#999999')
       .text('Thank you for choosing NurseryOS services for your supply chain requirements.', 50, 730, { align: 'center', width: 500 });
+
+    doc.end();
+  });
+};
+
+/**
+ * Compiles a route-sheet PDF for an exporter collection plan.
+ *
+ * @param {Object} plan The Prisma OperationalPlan including stops and exporter relations.
+ * @returns {Promise<Buffer>} Resolver returning raw binary file buffer
+ */
+export const generatePlanPdf = (plan) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 44 });
+    const buffers = [];
+
+    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(buffers)));
+    doc.on('error', (err) => reject(err));
+
+    const list = parsePlanNotes(plan.notes);
+    const plantsByNursery = new Map();
+
+    (list?.selectedSources || []).forEach((line) => {
+      if (!plantsByNursery.has(line.nurseryId)) {
+        plantsByNursery.set(line.nurseryId, []);
+      }
+      plantsByNursery.get(line.nurseryId).push(line);
+    });
+
+    doc.fillColor('#1b5e20').font('Helvetica-Bold').fontSize(24).text('NurseryOS', 44, 40);
+    doc.fillColor('#555555').font('Helvetica').fontSize(10).text('Exporter Route Sheet', 44, 68);
+
+    doc.fillColor('#222222').font('Helvetica-Bold').fontSize(18).text('ROUTE SHEET', 390, 40, { align: 'right' });
+    doc.font('Helvetica').fontSize(10).text(`Plan #: ${plan.id.slice(0, 8).toUpperCase()}`, 390, 66, { align: 'right' });
+    doc.text(`Date: ${new Date(plan.createdAt).toLocaleDateString()}`, 390, 81, { align: 'right' });
+    doc.text(`Status: ${plan.status}`, 390, 96, { align: 'right' });
+
+    doc.moveTo(44, 122).lineTo(548, 122).strokeColor('#e0e0e0').stroke();
+
+    doc.fillColor('#222222').font('Helvetica-Bold').fontSize(12).text('Exporter:', 44, 140);
+    doc.font('Helvetica').fontSize(10).text(plan.exporter?.fullName || 'N/A', 44, 158);
+    doc.text(plan.exporter?.email || '', 44, 172);
+
+    doc.fillColor('#222222').font('Helvetica-Bold').fontSize(12).text('Plan Summary:', 290, 140);
+    doc.font('Helvetica').fontSize(10).text(plan.name, 290, 158);
+    doc.text(list?.landscaperName ? `Customer: ${list.landscaperName}` : 'Customer: -', 290, 172);
+    doc.text(`Stops: ${plan.totalStops || 0}`, 290, 186);
+    doc.text(`Total Plants: ${plan.totalQuantity || 0}`, 290, 200);
+
+    let y = 235;
+    doc.fillColor('#222222').font('Helvetica-Bold').fontSize(12).text('Collection Stops', 44, y);
+    y += 20;
+
+    const stopRows = plan.stops || [];
+    stopRows.forEach((stop, idx) => {
+      const nursery = stop.nursery || {};
+      const farmer = nursery.farmer || {};
+      const stopLines = plantsByNursery.get(stop.nurseryId) || [];
+
+      if (y > 680) {
+        doc.addPage();
+        y = 44;
+      }
+
+      doc.roundedRect(44, y, 504, 92 + Math.min(stopLines.length, 4) * 12).strokeColor('#e5e7eb').stroke();
+
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#1f2937')
+        .text(`${idx + 1}. ${nursery.name || 'Unknown nursery'}`, 54, y + 10);
+
+      doc.font('Helvetica').fontSize(9).fillColor('#4b5563')
+        .text(`Location: ${nursery.location || '-'}`, 54, y + 26);
+      doc.text(`Farmer: ${farmer.fullName || 'Unknown'} | ${farmer.email || 'No email'}`, 54, y + 39);
+      doc.text(`Contact: ${nursery.contactPerson || '-'}${nursery.mobileNumber ? ` | ${nursery.mobileNumber}` : ''}`, 54, y + 52);
+      doc.text(`Planned Quantity: ${stop.plannedQuantity || 0}`, 54, y + 65);
+
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9)
+        .text('Plants to load', 312, y + 10);
+
+      let lineY = y + 24;
+      stopLines.slice(0, 4).forEach((line) => {
+        doc.font('Helvetica').fontSize(8).fillColor('#374151')
+          .text(`- ${line.requestedPlantName} x ${line.requestedQuantity}`, 312, lineY, { width: 220 });
+        lineY += 12;
+      });
+      if (stopLines.length > 4) {
+        doc.font('Helvetica-Oblique').fontSize(8).fillColor('#6b7280')
+          .text(`+ ${stopLines.length - 4} more items`, 312, lineY);
+      }
+
+      y += 108 + Math.min(stopLines.length, 4) * 12;
+    });
+
+    y += 10;
+    if (y > 700) {
+      doc.addPage();
+      y = 44;
+    }
+
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#222222').text('Route Note', 44, y);
+    doc.font('Helvetica').fontSize(9).fillColor('#555555')
+      .text('Use the stop order above for lorry loading and handoff. Each stop lists the farmer contact and the plant load for that nursery.', 44, y + 18, {
+        width: 504,
+      });
 
     doc.end();
   });
