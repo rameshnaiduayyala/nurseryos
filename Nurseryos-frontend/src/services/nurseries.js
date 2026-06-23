@@ -26,7 +26,10 @@ export const nurseries = {
   approve: async (id, isApproved) => {
     const res = await fetch(`${API_URL}/nurseries/${id}/approve`, {
       method: 'PATCH',
-      headers: getHeaders(),
+      headers: {
+        ...getHeaders(),
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ isApproved }),
     });
     return handleResponse(res);

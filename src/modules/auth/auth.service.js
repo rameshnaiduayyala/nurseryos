@@ -32,7 +32,7 @@ const generateRefreshToken = async (user) => {
   return token;
 };
 
-export const register = async ({ email, password, fullName, roleName }) => {
+export const register = async ({ email, password, fullName, roleName, nurseryName, nurseryLocation, latitude, longitude }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     throw ApiError.conflict('Email is already registered');
@@ -70,6 +70,21 @@ export const register = async ({ email, password, fullName, roleName }) => {
     await prisma.supervisor.create({
       data: {
         userId: user.id,
+      },
+    });
+  } else if (roleName === 'FARMER') {
+    if (!nurseryName || nurseryName.trim().length === 0) {
+      throw ApiError.badRequest('Nursery name is required for farmer registration');
+    }
+
+    const nursery = await prisma.nursery.create({
+      data: {
+        name: nurseryName.trim(),
+        location: nurseryLocation?.trim() || '',
+        farmerId: user.id,
+        isApproved: false,
+        latitude: latitude != null ? parseFloat(latitude) : null,
+        longitude: longitude != null ? parseFloat(longitude) : null,
       },
     });
   }

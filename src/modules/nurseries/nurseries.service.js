@@ -30,6 +30,13 @@ export const approveNursery = async (nurseryId, isApproved) => {
     data: { isApproved },
   });
 
+  if (isApproved && nursery.farmerId) {
+    await prisma.user.update({
+      where: { id: nursery.farmerId },
+      data: { isActive: true },
+    });
+  }
+
   return updatedNursery;
 };
 

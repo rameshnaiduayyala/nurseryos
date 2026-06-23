@@ -53,12 +53,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleRegister = async (email, password, fullName, roleName) => {
+  const handleRegister = async (email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng) => {
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      const res = await api.auth.register(email, password, fullName, roleName);
+      const res = await api.auth.register(email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng);
       setSuccess('Account registered successfully! Please wait for Admin approval.');
       return res;
     } catch (err) {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { UserCheck, TreePine, CheckCircle2, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserCheck, TreePine, CheckCircle2, XCircle, RefreshCw, Ban } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,7 +8,16 @@ export default function Approvals() {
   const [usersList, setUsersList] = useState([]);
   const [nurseriesList, setNurseriesList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [approving, setApproving] = useState(null);
+  const [actionId, setActionId] = useState(null);
+
+  const farmerNurseryMap = useMemo(() => {
+    const map = {};
+    (nurseriesList || []).forEach((n) => {
+      const fid = n?.farmerId;
+      if (fid) map[fid] = n.id;
+    });
+    return map;
+  }, [nurseriesList]);
 
   const loadData = async () => {
     try {
@@ -17,11 +26,11 @@ export default function Approvals() {
         api.users.list(),
         api.nurseries.list(),
       ]);
-      setUsersList(usersRes.data || []);
-      setNurseriesList(nurseriesRes.data || []);
+      setUsersList(Array.isArray(usersRes?.data) ? usersRes.data : []);
+      setNurseriesList(Array.isArray(nurseriesRes?.data) ? nurseriesRes.data : []);
     } catch (err) {
       console.error('Failed to load approvals lists', err);
-      setError(err.message);
+      setError(err?.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -31,38 +40,60 @@ export default function Approvals() {
     loadData();
   }, []);
 
-  const handleApproveUser = async (id) => {
+  const handleApproveUser = async (userId, roleName, nurseryId) => {
     try {
-      setApproving(id);
-      await api.users.approve(id);
-      setSuccess('User approved successfully.');
+      setActionId(userId);
+      await api.users.approve(userId);
+      if (roleName === 'FARMER' && nurseryId) {
+        await api.nurseries.approve(nurseryId, true);
+      }
+      setSuccess(roleName === 'FARMER' ? 'Farmer and nursery approved successfully.' : 'User approved successfully.');
       await loadData();
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || 'Action failed');
     } finally {
-      setApproving(null);
+      setActionId(null);
     }
   };
 
-  const handleApproveNursery = async (id) => {
+  const handleSuspendUser = async (userId, roleName, nurseryId) => {
     try {
-      setApproving(id);
-      await api.nurseries.approve(id, true);
-      setSuccess('Nursery approved successfully.');
+      setActionId(userId);
+      await api.users.updateActiveStatus(userId, false);
+      if (roleName === 'FARMER' && nurseryId) {
+        await api.nurseries.approve(nurseryId, false);
+      }
+      setSuccess(roleName === 'FARMER' ? 'Farmer and nursery suspended.' : 'User suspended successfully.');
       await loadData();
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || 'Action failed');
     } finally {
-      setApproving(null);
+      setActionId(null);
     }
   };
 
-  const pendingUsers = usersList.filter((u) => !u.isActive);
-  const pendingNurseries = nurseriesList.filter((n) => !n.isApproved);
+  const handleNurseryDecision = async (nurseryId, approve) => {
+    try {
+      setActionId(nurseryId);
+      await api.nurseries.approve(nurseryId, approve);
+      setSuccess(approve ? 'Nursery approved and farmer activated.' : 'Nursery registration rejected.');
+      await loadData();
+    } catch (err) {
+      setError(err?.message || 'Action failed');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const getRoleName = (u) => u?.role?.name || u?.roleName || 'N/A';
+  const getUserId = (u) => u?.id || '';
+
+  const pendingUsers = (usersList || []).filter((u) => !u.isActive);
+  const pendingNurseries = (nurseriesList || []).filter((n) => !n.isApproved);
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
+      <div className="space-y-6">
         {[1, 2].map(i => (
           <div key={i} className="skeleton h-48 rounded-xl"></div>
         ))}
@@ -71,7 +102,7 @@ export default function Approvals() {
   }
 
   return (
-    <div className="space-y-6 animate-fadeInUp">
+    <div className="space-y-6">
       {/* Pending User Approvals */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
@@ -90,42 +121,62 @@ export default function Approvals() {
                 <th className="pb-3">Applicant</th>
                 <th className="pb-3">Email</th>
                 <th className="pb-3">Requested Role</th>
-                <th className="pb-3 text-center">Action</th>
+                <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {pendingUsers.map((u) => (
-                <tr key={u.id} className="border-b border-slate-50">
-                  <td className="py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">
-                        {u.fullName?.charAt(0)?.toUpperCase() || '?'}
+              {pendingUsers.map((u) => {
+                const uid = getUserId(u);
+                if (!uid) return null;
+                const roleName = getRoleName(u);
+                const nurseryId = farmerNurseryMap[uid];
+                return (
+                  <tr key={uid} className="border-b border-slate-50">
+                    <td className="py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">
+                          {u?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <span className="font-semibold text-slate-800">{u?.fullName || 'Unknown'}</span>
                       </div>
-                      <span className="font-semibold text-slate-800">{u.fullName}</span>
-                    </div>
-                  </td>
-                  <td className="py-3.5 text-slate-500">{u.email}</td>
-                  <td className="py-3.5">
-                    <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      {u.role?.name}
-                    </span>
-                  </td>
-                  <td className="py-3.5 text-center">
-                    <button
-                      onClick={() => handleApproveUser(u.id)}
-                      disabled={approving === u.id}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm disabled:opacity-50"
-                    >
-                      {approving === u.id ? (
-                        <RefreshCw size={13} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={13} />
-                      )}
-                      Approve
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3.5 text-slate-500">{u?.email || '-'}</td>
+                    <td className="py-3.5">
+                      <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {roleName}
+                      </span>
+                    </td>
+                    <td className="py-3.5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleApproveUser(uid, roleName, nurseryId)}
+                          disabled={actionId === uid}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm disabled:opacity-50"
+                        >
+                          {actionId === uid ? (
+                            <RefreshCw size={13} className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 size={13} />
+                          )}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleSuspendUser(uid, roleName, nurseryId)}
+                          disabled={actionId === uid}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition shadow-sm disabled:opacity-50"
+                        >
+                          {actionId === uid ? (
+                            <RefreshCw size={13} className="animate-spin" />
+                          ) : (
+                            <Ban size={13} />
+                          )}
+                          Suspend
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {pendingUsers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-slate-400 text-sm">
@@ -156,36 +207,52 @@ export default function Approvals() {
               <tr className="border-b-2 border-slate-100 text-xs uppercase tracking-wider text-slate-400 font-semibold">
                 <th className="pb-3">Nursery Name</th>
                 <th className="pb-3">Location</th>
-                <th className="pb-3">GST</th>
-                <th className="pb-3 text-center">Action</th>
+                <th className="pb-3">Farmer</th>
+                <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {pendingNurseries.map((n) => (
-                <tr key={n.id} className="border-b border-slate-50">
+                <tr key={n?.id || Math.random()} className="border-b border-slate-50">
                   <td className="py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-xs font-bold text-white">
                         <TreePine size={14} />
                       </div>
-                      <span className="font-semibold text-slate-800">{n.name}</span>
+                      <span className="font-semibold text-slate-800">{n?.name || 'Unknown'}</span>
                     </div>
                   </td>
-                  <td className="py-3.5 text-slate-500">{n.location}</td>
-                  <td className="py-3.5 font-mono text-slate-500 text-xs">{n.gst}</td>
+                  <td className="py-3.5 text-slate-500">{n?.location || '-'}</td>
+                  <td className="py-3.5 text-slate-500">
+                    {n?.farmer?.fullName || n?.farmerId?.slice?.(0, 8) || '-'}
+                  </td>
                   <td className="py-3.5 text-center">
-                    <button
-                      onClick={() => handleApproveNursery(n.id)}
-                      disabled={approving === n.id}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm disabled:opacity-50"
-                    >
-                      {approving === n.id ? (
-                        <RefreshCw size={13} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={13} />
-                      )}
-                      Approve
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleNurseryDecision(n?.id, true)}
+                        disabled={!n?.id || actionId === n.id}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm disabled:opacity-50"
+                      >
+                        {actionId === n?.id ? (
+                          <RefreshCw size={13} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={13} />
+                        )}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleNurseryDecision(n?.id, false)}
+                        disabled={!n?.id || actionId === n.id}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition shadow-sm disabled:opacity-50"
+                      >
+                        {actionId === n?.id ? (
+                          <RefreshCw size={13} className="animate-spin" />
+                        ) : (
+                          <XCircle size={13} />
+                        )}
+                        Reject
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

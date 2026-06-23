@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Leaf, AlertCircle, CheckCircle, Zap } from 'lucide-react';
+import { Leaf, AlertCircle, CheckCircle, Zap, MapPin, Navigation } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import LocationPicker from '../../components/LocationPicker';
 
 const DEMO_ACCOUNTS = [
   { email: 'admin@nurseryos.com', password: 'Password123', label: 'Admin', color: 'bg-indigo-600 hover:bg-indigo-700' },
@@ -17,6 +18,10 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [roleName, setRoleName] = useState('EXPORTER');
+  const [nurseryName, setNurseryName] = useState('');
+  const [nurseryLocation, setNurseryLocation] = useState('');
+  const [nurseryLat, setNurseryLat] = useState('');
+  const [nurseryLng, setNurseryLng] = useState('');
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -27,21 +32,16 @@ export default function AuthPage() {
     }
   };
 
-  const handleQuickLogin = async (demo) => {
+  const handleQuickLogin = (demo) => {
     setEmail(demo.email);
     setPassword(demo.password);
     setError('');
-    try {
-      await login(demo.email, demo.password);
-    } catch (err) {
-      // Error is set in AuthContext
-    }
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     try {
-      await register(email, password, fullName, roleName);
+      await register(email, password, fullName, roleName, nurseryName, nurseryLocation, nurseryLat, nurseryLng);
       setIsRegister(false);
     } catch (err) {
       // Error is set in AuthContext
@@ -186,6 +186,33 @@ export default function AuthPage() {
                 <option value="SUPERVISOR">Logistics Supervisor</option>
               </select>
             </div>
+
+            {roleName === 'FARMER' && (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1">Nursery Name <span className="text-rose-500">*</span></label>
+                  <input 
+                    type="text" 
+                    required
+                    value={nurseryName}
+                    onChange={(e) => setNurseryName(e.target.value)}
+                    placeholder="My Green Nursery"
+                    className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-emerald-800 mb-1">Nursery Location</label>
+                  <LocationPicker
+                    onChange={(loc) => {
+                      setNurseryLocation(loc?.label || '');
+                      if (loc?.lat) setNurseryLat(String(loc.lat));
+                      if (loc?.lng) setNurseryLng(String(loc.lng));
+                    }}
+                    height="200px"
+                  />
+                </div>
+              </>
+            )}
             <button 
               type="submit" 
               disabled={loading}

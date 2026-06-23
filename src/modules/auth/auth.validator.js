@@ -8,6 +8,20 @@ export const registerSchema = z.object({
     roleName: z.enum(['ADMIN', 'FARMER', 'EXPORTER', 'SUPERVISOR'], {
       errorMap: () => ({ message: 'Role must be one of ADMIN, FARMER, EXPORTER, SUPERVISOR' }),
     }),
+    nurseryName: z.string().optional(),
+    nurseryLocation: z.string().optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+  }).refine((data) => {
+    if (data.roleName === 'FARMER') {
+      return !!data.nurseryName && data.nurseryName.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: 'Nursery name is required for farmer registration',
+    path: ['nurseryName'],
   }),
 });
 
