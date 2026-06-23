@@ -16,6 +16,13 @@ export const plants = {
     });
     return handleResponse(res);
   },
+  suggest: async (query, limit = 10) => {
+    const queryParams = new URLSearchParams({ q: query, limit: String(limit) }).toString();
+    const res = await fetch(`${API_URL}/plants/suggestions?${queryParams}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
 
 export const categories = {

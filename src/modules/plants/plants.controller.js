@@ -25,9 +25,21 @@ export const getPlants = async (req, res, next) => {
   }
 };
 
+export const getSuggestions = async (req, res, next) => {
+  try {
+    const result = await plantsService.getSuggestions(req.query.q, parseInt(req.query.limit) || 10, req.user);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getPlantById = async (req, res, next) => {
   try {
-    const result = await plantsService.getPlantById(req.params.id, req.user);
+    const result = await plantsService.getPlantById(req.params.id);
     res.status(200).json({
       success: true,
       data: result,
@@ -52,7 +64,7 @@ export const updatePlant = async (req, res, next) => {
 
 export const deletePlant = async (req, res, next) => {
   try {
-    await plantsService.deletePlant(req.params.id);
+    await plantsService.deletePlant(req.params.id, req.user.id, req.user.role);
     res.status(200).json({
       success: true,
       message: 'Plant deleted successfully',

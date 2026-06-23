@@ -5,6 +5,7 @@ import PlantCard from '../../components/PlantCard';
 import NurseryDetailPanel from '../../components/NurseryDetailPanel';
 import BatchReserveCart from '../../components/BatchReserveCart';
 import RouteSummary from '../../components/RouteSummary';
+import AutocompleteInput from '../../components/AutocompleteInput';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -306,12 +307,14 @@ export default function Catalog() {
             )}
           </h4>
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
-            <input
-              type="text"
-              placeholder="Search plants..."
+            <AutocompleteInput
               value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full md:w-48"
+              onChange={(val) => setSearchName(val)}
+              fetchSuggestions={(query) => api.plants.suggest(query).then(res => res.data || [])}
+              placeholder="Search plants..."
+              displayKey="name"
+              subKey="farmerName"
+              className="w-full md:w-64"
             />
             <select
               value={filterCategory}

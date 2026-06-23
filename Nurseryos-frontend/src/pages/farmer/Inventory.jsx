@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import { useToast, ToastContainer } from '../../components/Toast';
+import AutocompleteInput from '../../components/AutocompleteInput';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -546,14 +547,26 @@ export default function Inventory() {
         <form onSubmit={handleCreatePlant} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Plant Name</label>
-            <input
-              type="text"
-              required
+            <AutocompleteInput
               value={plantForm.name}
-              onChange={(e) => setPlantForm({ ...plantForm, name: e.target.value })}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="e.g. Rose, Mango, Teak"
+              onChange={(val) => setPlantForm({ ...plantForm, name: val })}
+              onSelect={(item) => {
+                if (item) {
+                  setPlantForm({
+                    ...plantForm,
+                    name: item.name,
+                  });
+                  if (item.isOwn) {
+                    addToast('You already have this plant in your catalog. You can still create a batch for it.', 'warning');
+                  }
+                }
+              }}
+              fetchSuggestions={(query) => api.plants.suggest(query).then(res => res.data || [])}
+              placeholder="Search existing plants or type new..."
+              displayKey="name"
+              subKey="farmerName"
             />
+            <p className="text-[11px] text-slate-400 mt-1">Select from suggestions to avoid duplicates</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

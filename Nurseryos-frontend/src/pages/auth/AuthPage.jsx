@@ -27,12 +27,12 @@ export default function AuthPage() {
     }
   };
 
-  const handleQuickLogin = async (quickEmail, quickPassword) => {
-    setEmail(quickEmail);
-    setPassword(quickPassword);
+  const handleQuickLogin = async (demo) => {
+    setEmail(demo.email);
+    setPassword(demo.password);
     setError('');
     try {
-      await login(quickEmail, quickPassword);
+      await login(demo.email, demo.password);
     } catch (err) {
       // Error is set in AuthContext
     }
@@ -119,7 +119,7 @@ export default function AuthPage() {
                 <button
                   key={demo.email}
                   type="button"
-                  onClick={() => handleQuickLogin(demo.email, demo.password)}
+                  onClick={() => handleQuickLogin(demo)}
                   disabled={loading}
                   className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition duration-200 disabled:opacity-50 ${demo.color}`}
                 >

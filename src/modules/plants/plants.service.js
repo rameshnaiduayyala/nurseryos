@@ -147,7 +147,46 @@ export const getPlants = async (filters, user) => {
   });
 };
 
-export const getPlantById = async (id, user) => {
+export const getSuggestions = async (query, limit, user) => {
+  if (!query || query.trim().length < 1) {
+    return [];
+  }
+
+  const where = {
+    name: {
+      contains: query.trim(),
+      mode: 'insensitive',
+    },
+  };
+
+  const plants = await prisma.plant.findMany({
+    where,
+    take: limit,
+    include: {
+      farmer: {
+        select: { id: true, fullName: true },
+      },
+      category: true,
+      variety: true,
+      bagSize: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
+  return plants.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category?.name,
+    variety: p.variety?.name,
+    bagSize: p.bagSize?.size,
+    farmerName: p.farmer?.fullName || 'Global',
+    isOwn: user && user.role === 'FARMER' && p.farmerId === user.id,
+  }));
+};
+
+export const getPlantById = async (id) => {
   const plant = await prisma.plant.findUnique({
     where: { id },
     include: {
@@ -160,10 +199,6 @@ export const getPlantById = async (id, user) => {
 
   if (!plant) {
     throw ApiError.notFound('Plant not found');
-  }
-
-  if (user && user.role === 'FARMER' && plant.farmerId !== user.id) {
-    throw ApiError.forbidden('You can only view your own plants');
   }
 
   return plant;
@@ -208,10 +243,14 @@ export const updatePlant = async (id, data, userId, userRole) => {
   });
 };
 
-export const deletePlant = async (id) => {
+export const deletePlant = async (id, userId, userRole) => {
   const plant = await prisma.plant.findUnique({ where: { id } });
   if (!plant) {
     throw ApiError.notFound('Plant not found');
+  }
+
+  if (userRole !== 'ADMIN' && plant.farmerId !== userId) {
+    throw ApiError.forbidden('You can only delete your own plants');
   }
 
   await prisma.plant.delete({ where: { id } });

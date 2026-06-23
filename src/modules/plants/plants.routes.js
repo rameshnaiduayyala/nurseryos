@@ -91,6 +91,32 @@ router.get('/', authenticate, validate(searchPlantsSchema), plantsController.get
 
 /**
  * @openapi
+ * /plants/suggestions:
+ *   get:
+ *     summary: Get plant name suggestions for autocomplete (all authenticated users)
+ *     tags: [Plants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: q
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Array of matching plant suggestions with name and farmer info
+ */
+router.get('/suggestions', authenticate, plantsController.getSuggestions);
+
+/**
+ * @openapi
  * /plants/{id}:
  *   get:
  *     summary: Get plant details by ID
@@ -174,6 +200,6 @@ router.put(
  *       200:
  *         description: Plant deleted
  */
-router.delete('/:id', authenticate, authorize('ADMIN'), plantsController.deletePlant);
+router.delete('/:id', authenticate, plantsController.deletePlant);
 
 export default router;
