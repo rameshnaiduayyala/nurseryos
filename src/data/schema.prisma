@@ -1,0 +1,529 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  passwordHash        String             @map("password_hash")
+  fullName            String             @map("full_name")
+  roleId              String             @map("role_id")
+  role                Role               @relation(fields: [roleId], references: [id])
+  isActive            Boolean            @default(true) @map("is_active")
+  nurseries           Nursery[]
+  reservations        Reservation[]
+  procurementOrders   ProcurementOrder[]
+  quotations          Quotation[]
+  drivers             Driver[]
+  supervisors         Supervisor[]
+  trips               Trip[]             @relation("ExporterTrips")
+  refreshTokens       RefreshToken[]
+  auditLogs           AuditLog[]
+  farmerLedgerEntries FarmerLedger[]
+  posSales            PosSale[]
+  operationalPlans   OperationalPlan[]
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+model Nursery {
+  id            String         @id @default(uuid())
+  name          String
+  location      String
+  gst           String?
+  address       String?
+  contactPerson String?        @map("contact_person")
+  latitude      Float?
+  longitude     Float?
+  farmerId      String         @map("farmer_id")
+  farmer        User           @relation(fields: [farmerId], references: [id])
+  isApproved    Boolean        @default(false) @map("is_approved")
+  blocks        NurseryBlock[]
+  tripStops     TripStop[]
+  posSales      PosSale[]
+  planStops     PlanStop[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("nurseries")
+}
+
+model NurseryBlock {
+  id               String           @id @default(uuid())
+  name             String
+  nurseryId        String           @map("nursery_id")
+  nursery          Nursery          @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  inventoryBatches InventoryBatch[]
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@map("nursery_blocks")
+}
+
+model PlantCategory {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  plants    Plant[]
+  varieties PlantVariety[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@map("plant_categories")
+}
+
+model PlantVariety {
+  id         String        @id @default(uuid())
+  name       String
+  categoryId String        @map("category_id")
+  category   PlantCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  plants     Plant[]
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@map("plant_varieties")
+}
+
+model BagSize {
+  id        String   @id @default(uuid())
+  size      String   @unique
+  plants    Plant[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("bag_sizes")
+}
+
+model HeightStandard {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  plants    Plant[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("height_standards")
+}
+
+model Plant {
+  id               String                 @id @default(uuid())
+  name             String
+  categoryId       String                 @map("category_id")
+  category         PlantCategory          @relation(fields: [categoryId], references: [id])
+  varietyId        String                 @map("variety_id")
+  variety          PlantVariety           @relation(fields: [varietyId], references: [id])
+  bagSizeId        String                 @map("bag_size_id")
+  bagSize          BagSize                @relation(fields: [bagSizeId], references: [id])
+  heightStandardId String                 @map("height_standard_id")
+  heightStandard   HeightStandard         @relation(fields: [heightStandardId], references: [id])
+  description      String?
+  unitPrice        Decimal                @map("unit_price") @db.Decimal(10, 2)
+  inventoryBatches InventoryBatch[]
+  procurementItems ProcurementOrderItem[]
+  reservations     Reservation[]
+  collections      Collection[]
+  posSaleItems     PosSaleItem[]
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  @@map("plants")
+}
+
+model InventoryBatch {
+  id                String                 @id @default(uuid())
+  nurseryBlockId    String                 @map("nursery_block_id")
+  nurseryBlock      NurseryBlock           @relation(fields: [nurseryBlockId], references: [id])
+  plantId           String                 @map("plant_id")
+  plant             Plant                  @relation(fields: [plantId], references: [id])
+  quantity          Int
+  availableQuantity Int                    @map("available_quantity")
+  unitPrice         Decimal                @map("unit_price") @db.Decimal(10, 2)
+  status            String                 @default("AVAILABLE")
+  transactions      InventoryTransaction[]
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  @@map("inventory_batches")
+}
+
+model InventoryTransaction {
+  id               String          @id @default(uuid())
+  inventoryBatchId String          @map("inventory_batch_id")
+  inventoryBatch   InventoryBatch  @relation(fields: [inventoryBatchId], references: [id], onDelete: Cascade)
+  reservationId    String?         @map("reservation_id")
+  reservation      Reservation?    @relation(fields: [reservationId], references: [id])
+  type             String          // IN, OUT, RESERVED, RELEASED
+  quantity         Int
+  description      String?
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  @@map("inventory_transactions")
+}
+
+model Reservation {
+  id                    String                 @id @default(uuid())
+  exporterId            String                 @map("exporter_id")
+  exporter              User                   @relation(fields: [exporterId], references: [id])
+  plantId               String                 @map("plant_id")
+  plant                 Plant                  @relation(fields: [plantId], references: [id])
+  quantity              Int
+  status                String                 @default("PENDING") // PENDING, APPROVED, EXPIRED, COLLECTED, CANCELLED
+  expiresAt             DateTime               @map("expires_at")
+  inventoryTransactions InventoryTransaction[]
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+
+  @@map("reservations")
+}
+
+model Customer {
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  phone             String?
+  address           String?
+  type              String?            // LANDSCAPER, GOVERNMENT_PROJECT, BUILDER
+  procurementOrders ProcurementOrder[]
+  quotations        Quotation[]
+  ledgerEntries     CustomerLedger[]
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+model ProcurementOrder {
+  id          String                 @id @default(uuid())
+  exporterId  String                 @map("exporter_id")
+  exporter    User                   @relation(fields: [exporterId], references: [id])
+  customerId  String?                @map("customer_id")
+  customer    Customer?              @relation(fields: [customerId], references: [id])
+  totalAmount Decimal                @map("total_amount") @db.Decimal(10, 2)
+  status      String                 @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, PROCESSING, SHIPPED, COMPLETED, CANCELLED
+  items       ProcurementOrderItem[]
+  invoices    Invoice[]
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  @@map("procurement_orders")
+}
+
+model ProcurementOrderItem {
+  id                 String           @id @default(uuid())
+  procurementOrderId String           @map("procurement_order_id")
+  procurementOrder   ProcurementOrder @relation(fields: [procurementOrderId], references: [id], onDelete: Cascade)
+  plantId            String           @map("plant_id")
+  plant              Plant            @relation(fields: [plantId], references: [id])
+  quantity           Int
+  unitPrice          Decimal          @map("unit_price") @db.Decimal(10, 2)
+  status             String           @default("PENDING") // PENDING, COLLECTED, REJECTED
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  @@map("procurement_order_items")
+}
+
+model Quotation {
+  id          String   @id @default(uuid())
+  exporterId  String   @map("exporter_id")
+  exporter    User     @relation(fields: [exporterId], references: [id])
+  customerId  String   @map("customer_id")
+  customer    Customer @relation(fields: [customerId], references: [id])
+  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
+  status      String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("quotations")
+}
+
+model Vehicle {
+  id           String   @id @default(uuid())
+  licensePlate String   @unique @map("license_plate")
+  model        String
+  capacity     Int
+  status       String   @default("AVAILABLE") // AVAILABLE, MAINTENANCE, ACTIVE
+  trips        Trip[]
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("vehicles")
+}
+
+model Driver {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+  licenseNumber String   @unique @map("license_number")
+  status        String   @default("AVAILABLE") // AVAILABLE, ON_TRIP, INACTIVE
+  trips         Trip[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("drivers")
+}
+
+model Supervisor {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  trips     Trip[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("supervisors")
+}
+
+model Trip {
+  id            String     @id @default(uuid())
+  exporterId    String     @map("exporter_id")
+  exporter      User       @relation(fields: [exporterId], references: [id], name: "ExporterTrips")
+  vehicleId     String     @map("vehicle_id")
+  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+  driverId      String     @map("driver_id")
+  driver        Driver     @relation(fields: [driverId], references: [id])
+  supervisorId  String     @map("supervisor_id")
+  supervisor    Supervisor @relation(fields: [supervisorId], references: [id])
+  status        String     @default("PLANNED") // PLANNED, IN_TRANSIT, COMPLETED, CANCELLED
+  departureDate DateTime   @map("departure_date")
+  stops         TripStop[]
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("trips")
+}
+
+model TripStop {
+  id          String       @id @default(uuid())
+  tripId      String       @map("trip_id")
+  trip        Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  nurseryId   String       @map("nursery_id")
+  nursery     Nursery      @relation(fields: [nurseryId], references: [id])
+  stopOrder   Int          @map("stop_order")
+  status      String       @default("PENDING") // PENDING, ARRIVED, DEPARTED
+  arrivedAt   DateTime?    @map("arrived_at")
+  departedAt  DateTime?    @map("departed_at")
+  collections Collection[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("trip_stops")
+}
+
+model Collection {
+  id                String    @id @default(uuid())
+  tripStopId        String    @map("trip_stop_id")
+  tripStop          TripStop  @relation(fields: [tripStopId], references: [id], onDelete: Cascade)
+  plantId           String    @map("plant_id")
+  plant             Plant     @relation(fields: [plantId], references: [id])
+  quantityCollected Int       @map("quantity_collected")
+  photoUrl          String?   @map("photo_url")
+  status            String    @default("PENDING") // PENDING, COLLECTED, REJECTED
+  collectedAt       DateTime? @map("collected_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("collections")
+}
+
+model Invoice {
+  id                 String           @id @default(uuid())
+  procurementOrderId String           @map("procurement_order_id")
+  procurementOrder   ProcurementOrder @relation(fields: [procurementOrderId], references: [id])
+  invoiceNumber      String           @unique @map("invoice_number")
+  amountDue          Decimal          @map("amount_due") @db.Decimal(10, 2)
+  amountPaid         Decimal          @default(0.00) @map("amount_paid") @db.Decimal(10, 2)
+  status             String           @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID, VOID
+  dueDate            DateTime         @map("due_date")
+  payments           Payment[]
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  @@map("invoices")
+}
+
+model Payment {
+  id                   String   @id @default(uuid())
+  invoiceId            String   @map("invoice_id")
+  invoice              Invoice  @relation(fields: [invoiceId], references: [id])
+  amount               Decimal  @db.Decimal(10, 2)
+  paymentMethod        String   @map("payment_method")
+  paymentStatus        String   @default("PENDING") @map("payment_status") // PENDING, COMPLETED, FAILED
+  transactionReference String?  @map("transaction_reference")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+model CustomerLedger {
+  id          String   @id @default(uuid())
+  customerId  String   @map("customer_id")
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        String   // DEBIT, CREDIT
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?
+  referenceId String?  @map("reference_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("customer_ledgers")
+}
+
+model FarmerLedger {
+  id          String   @id @default(uuid())
+  farmerId    String   @map("farmer_id")
+  farmer      User     @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  type        String   // DEBIT, CREDIT
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?
+  referenceId String?  @map("reference_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("farmer_ledgers")
+}
+
+model PosSale {
+  id            String        @id @default(uuid())
+  farmerId      String        @map("farmer_id")
+  farmer        User          @relation(fields: [farmerId], references: [id])
+  nurseryId     String        @map("nursery_id")
+  nursery       Nursery       @relation(fields: [nurseryId], references: [id])
+  customerName  String        @map("customer_name")
+  customerPhone String?       @map("customer_phone")
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod String        @map("payment_method") // CASH, CARD, UPI, CREDIT
+  paymentStatus String        @map("payment_status") // PAID, UNPAID
+  receiptNumber String        @unique @map("receipt_number")
+  items         PosSaleItem[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("pos_sales")
+}
+
+model PosSaleItem {
+  id        String   @id @default(uuid())
+  saleId    String   @map("sale_id")
+  sale      PosSale  @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  plantId   String   @map("plant_id")
+  plant     Plant    @relation(fields: [plantId], references: [id])
+  quantity  Int
+  unitPrice Decimal  @map("unit_price") @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("pos_sale_items")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityName String   @map("entity_name")
+  entityId   String?  @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model ApprovalRequest {
+  id            String    @id @default(uuid())
+  requesterId   String    @map("requester_id")
+  requesterRole String    @map("requester_role")
+  entityType    String    @map("entity_type")
+  entityId      String    @map("entity_id")
+  status        String    @default("PENDING")
+  priority      String    @default("MEDIUM")
+  note          String?
+  reviewedBy    String?
+  reviewedAt    DateTime? @map("reviewed_at")
+  reviewNote    String?   @map("review_note")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("approval_requests")
+}
+
+model OperationalPlan {
+  id            String       @id @default(uuid())
+  exporterId    String       @map("exporter_id")
+  exporter      User         @relation(fields: [exporterId], references: [id])
+  name          String
+  description   String?
+  type          String       @default("DELIVERY")
+  status        String       @default("DRAFT")
+  plannedDate   DateTime?    @map("planned_date")
+  totalStops    Int          @default(0) @map("total_stops")
+  totalQuantity Int          @default(0) @map("total_quantity")
+  notes         String?
+  stops         PlanStop[]
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("operational_plans")
+}
+
+model PlanStop {
+  id              String          @id @default(uuid())
+  planId          String          @map("plan_id")
+  plan            OperationalPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  nurseryId       String          @map("nursery_id")
+  nursery         Nursery         @relation(fields: [nurseryId], references: [id])
+  stopOrder       Int             @map("stop_order")
+  status          String          @default("PENDING")
+  plannedQuantity Int             @map("planned_quantity")
+  collectedQuantity Int           @default(0) @map("collected_quantity")
+  notes           String?
+  arrivedAt       DateTime?       @map("arrived_at")
+  departedAt      DateTime?       @map("departed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@map("plan_stops")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  title         String
+  message       String
+  type          String   @default("SYSTEM")
+  read          Boolean  @default(false)
+  referenceId   String?  @map("reference_id")
+  referenceType String?  @map("reference_type")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
